@@ -97,7 +97,7 @@ class Blockchain(object):
         guess_hash = hashlib.sha256(guess).hexdigest()
         pass
         # then return True if the guess hash has the valid number of leading zeros otherwise return False
-        return guess_hash[:3] == "000"
+        return guess_hash[:6] == "000000"
 
 
 
@@ -111,18 +111,26 @@ node_identifier = str(uuid4()).replace('-', '')
 blockchain = Blockchain()
 
 
-@app.route('/mine', methods=['GET'])
+@app.route('/mine', methods=['POST'])
 def mine():
     # Run the proof of work algorithm to get the next proof
+    data = request.get_json()
+    if not data or (not 'proof' in data and not 'id' in data):
+        return jsonify({"message": "id and proof are required"}), 400
     proof = blockchain.proof_of_work()
 
     # Forge the new Block by adding it to the chain with the proof
-    previous_hash = blockchain.hash(blockchain.last_block)
-    block = blockchain.new_block(proof, previous_hash)
+    block_string = json.dumps(blockchain.last_block, sort_keys=True)
+    if blockchain.valid_proof(block_string, data['proof']):
 
-    response = { "block": block }
+        previous_hash = blockchain.hash(blockchain.last_block)
+        block = blockchain.new_block(proof, previous_hash)
 
-    return jsonify(response), 200
+        response = { "block": block }
+
+        return jsonify(response), 200
+    else:
+        return jsonify({'message': 'The proof is invalid'}), 400
 
 
 @app.route('/chain', methods=['GET'])
