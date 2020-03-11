@@ -66,8 +66,6 @@ class Blockchain(object):
         # This can be hard to read, but .hexdigest() converts the
         # hash to a string of hexadecimal characters, which is
         # easier to work with and understand
-        
-
 
         # Return the hashed block string in hexadecimal format
         return hashlib.sha256(block_string).hexdigest()
@@ -95,11 +93,8 @@ class Blockchain(object):
         guess = f"{block_string}{proof}".encode()
         # create a guess hash and hexdigest it
         guess_hash = hashlib.sha256(guess).hexdigest()
-        pass
         # then return True if the guess hash has the valid number of leading zeros otherwise return False
         return guess_hash[:6] == "000000"
-
-
 
 # Instantiate our Node
 app = Flask(__name__)
@@ -117,16 +112,15 @@ def mine():
     data = request.get_json()
     if not data or (not 'proof' in data and not 'id' in data):
         return jsonify({"message": "id and proof are required"}), 400
-    proof = blockchain.proof_of_work()
-
+    
     # Forge the new Block by adding it to the chain with the proof
     block_string = json.dumps(blockchain.last_block, sort_keys=True)
     if blockchain.valid_proof(block_string, data['proof']):
 
         previous_hash = blockchain.hash(blockchain.last_block)
-        block = blockchain.new_block(proof, previous_hash)
+        block = blockchain.new_block(data['proof'], previous_hash)
 
-        response = { "block": block }
+        response = { "block": block, "message": "New Block Forged"}
 
         return jsonify(response), 200
     else:
@@ -142,10 +136,10 @@ def full_chain():
     return jsonify(response), 200
 
 @app.route('/last_block', methods=['GET'])
-def full_chain():
+def last_block():
     block = blockchain.last_block
     return jsonify(block), 200
-    
+
 # Run the program on port 5000
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
